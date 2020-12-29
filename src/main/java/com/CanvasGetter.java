@@ -147,6 +147,7 @@ public class CanvasGetter {
         List<Course> myCourses = getCourses();
         List<Course> courseResults = new ArrayList<>();
         for(Course course : myCourses) {
+            if (course == null) continue;
             if (courseHasAssignments(course))
                 courseResults.add(course);
         }
@@ -154,6 +155,7 @@ public class CanvasGetter {
     }
 
     private boolean courseHasAssignments(Course course) throws IOException {
+        if (course == null) return false;
         for (Assignment as : getAssignments(course)) {
             Date date = as.getDueAt();
             if (date != null) {
