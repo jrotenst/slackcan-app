@@ -2,14 +2,19 @@ package com;
 
 import edu.ksu.canvas.CanvasApiFactory;
 import edu.ksu.canvas.TestLauncher;
+import edu.ksu.canvas.exception.ObjectNotFoundException;
 import edu.ksu.canvas.interfaces.AccountReader;
 import edu.ksu.canvas.interfaces.AssignmentReader;
 import edu.ksu.canvas.interfaces.CourseReader;
+import edu.ksu.canvas.interfaces.PageReader;
 import edu.ksu.canvas.interfaces.QuizReader;
 import edu.ksu.canvas.interfaces.SubmissionReader;
 import edu.ksu.canvas.model.Account;
 import edu.ksu.canvas.model.Course;
+import edu.ksu.canvas.model.Page;
 import edu.ksu.canvas.model.assignment.Assignment;
+import edu.ksu.canvas.model.assignment.Quiz;
+import edu.ksu.canvas.model.assignment.Submission;
 import edu.ksu.canvas.oauth.NonRefreshableOauthToken;
 import edu.ksu.canvas.oauth.OauthToken;
 import edu.ksu.canvas.requestOptions.GetSingleAssignmentOptions;
@@ -18,6 +23,8 @@ import edu.ksu.canvas.requestOptions.ListCourseAssignmentsOptions;
 import edu.ksu.canvas.requestOptions.ListCurrentUserCoursesOptions;
 import edu.ksu.canvas.requestOptions.ListUserAssignmentOptions;
 import edu.ksu.canvas.requestOptions.ListCurrentUserCoursesOptions.Include;
+import edu.ksu.canvas.requestOptions.MultipleSubmissionsOptions.StudentSubmissionOption;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +75,16 @@ public class CanvasGetter {
         return assignmentReader.listCourseAssignments(new ListCourseAssignmentsOptions(courseId));
     }
 
+    public List<Page> getPages(Course course) throws IOException {
+        PageReader pageReader = canvasApiFactory.getReader(PageReader.class, oauthToken);
+        return pageReader.listPagesInCourse(Integer.toString(course.getId()));
+    }
+
+    public List<Quiz> getQuizzes(Course course) throws IOException {
+        QuizReader quizReader = canvasApiFactory.getReader(QuizReader.class, oauthToken);
+        return quizReader.getQuizzesInCourse(Integer.toString(course.getId()));
+    }
+
     public String getOwnCourses() throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -101,6 +118,7 @@ public class CanvasGetter {
         
         for(Course course : myCourses) {
             LOG.info("  " + course.getName());
+            if (course == null || course.getName() == null) continue;
 
             assignments = getAssignments(course);
             int i = 1;
@@ -147,7 +165,7 @@ public class CanvasGetter {
         List<Course> myCourses = getCourses();
         List<Course> courseResults = new ArrayList<>();
         for(Course course : myCourses) {
-            if (course == null) continue;
+            if (course.getName() == null || course == null) continue;
             if (courseHasAssignments(course))
                 courseResults.add(course);
         }
@@ -155,7 +173,7 @@ public class CanvasGetter {
     }
 
     private boolean courseHasAssignments(Course course) throws IOException {
-        if (course == null) return false;
+        if (course.getName() == null || course == null) return false;
         for (Assignment as : getAssignments(course)) {
             Date date = as.getDueAt();
             if (date != null) {
@@ -177,7 +195,7 @@ public class CanvasGetter {
         try {
             StringBuilder stringBuilder = new StringBuilder();
             Course course = getCourse(courseNumber);
-            if (course != null) {
+            if (course != null && course.getName() != null) {
                 List<Assignment> assignments = getAssignments(course);
                 if (assignments == null || assignments.size() <1) return "There are no assignments";
                 int i = 1;
